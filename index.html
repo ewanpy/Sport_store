@@ -18,9 +18,9 @@
           <span class="brand-name">BEGIBEY</span>
         </a>
         <nav class="header-actions" aria-label="Основная навигация">
-          <button id="themeToggle" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">🌓</button>
-          <a class="icon-btn" href="#" title="Избранное" aria-label="Избранное">❤</a>
-          <a class="icon-btn" href="#" title="Корзина" aria-label="Корзина">🛒</a>
+          <button id="cartToggle" class="icon-btn" title="Корзина" aria-label="Корзина">
+            🛒 <span id="cartCount" class="cart-count" aria-live="polite">0</span>
+          </button>
         </nav>
       </div>
     </header>
@@ -97,6 +97,22 @@
         <nav class="pagination" id="pagination" aria-label="Пагинация"></nav>
       </section>
     </main>
+
+    <div id="cartOverlay" class="cart-overlay" hidden></div>
+    <aside id="cartDrawer" class="cart-drawer" aria-label="Корзина" hidden>
+      <div class="cart-header">
+        <h3>Корзина</h3>
+        <button id="cartClose" class="icon-btn" aria-label="Закрыть">✕</button>
+      </div>
+      <div id="cartItems" class="cart-items"></div>
+      <div class="cart-footer">
+        <div class="cart-total-row"><span>Итого:</span><strong id="cartTotal">0 ₽</strong></div>
+        <div class="cart-actions">
+          <button id="cartClear" class="btn ghost">Очистить</button>
+          <button class="btn primary" disabled>Оформить</button>
+        </div>
+      </div>
+    </aside>
 
     <footer class="site-footer">
       <div class="container footer-inner">

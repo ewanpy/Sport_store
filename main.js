@@ -17,6 +17,130 @@ const state = {
 // Data source: Supabase if configured, else fallback to mock
 let products = [];
 let supabaseClient = null;
+// Cart state
+let cart = [];
+
+function loadCart(){
+  try{ cart = JSON.parse(localStorage.getItem('cart_v1')||'[]') || []; }
+  catch{ cart = []; }
+}
+function saveCart(){ localStorage.setItem('cart_v1', JSON.stringify(cart)); }
+function getCartCount(){ return cart.reduce((s,i)=>s+i.qty,0); }
+function getCartTotal(){
+  const map = new Map(products.map(p=>[p.id,p]));
+  return cart.reduce((sum, item)=> sum + (map.get(item.id)?.price||0)*item.qty, 0);
+}
+function addToCart(id, qty=1){
+  const idx = cart.findIndex(i=>i.id===id);
+  if(idx>=0) cart[idx].qty += qty; else cart.push({ id, qty });
+  cart = cart.filter(i=>i.qty>0);
+  saveCart();
+  renderCartBadge();
+}
+function setCartQty(id, qty){
+  const idx = cart.findIndex(i=>i.id===id);
+  if(idx>=0){ cart[idx].qty = qty; if(cart[idx].qty<=0) cart.splice(idx,1); }
+  saveCart();
+  renderCartBadge();
+}
+function removeFromCart(id){ cart = cart.filter(i=>i.id!==id); saveCart(); renderCartBadge(); }
+
+function renderCartBadge(){
+  const el = document.getElementById('cartCount');
+  if(el) el.textContent = String(getCartCount());
+  const totalEl = document.getElementById('cartTotal');
+  if(totalEl) totalEl.textContent = getCartTotal().toLocaleString('ru-RU',{style:'currency',currency:'RUB'});
+}
+
+function openCart(){
+  const drawer = document.getElementById('cartDrawer');
+  const overlay = document.getElementById('cartOverlay');
+  if(drawer && overlay){
+    drawer.hidden = false;
+    overlay.hidden = false;
+    // next frame to allow transition
+    requestAnimationFrame(()=>{
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+      document.body.classList.add('cart-open');
+    });
+    renderCartList();
+  }
+}
+function closeCart(){
+  const drawer = document.getElementById('cartDrawer');
+  const overlay = document.getElementById('cartOverlay');
+  if(drawer && overlay){
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.classList.remove('cart-open');
+    const onEnd = () => { drawer.hidden = true; overlay.hidden = true; drawer.removeEventListener('transitionend', onEnd); };
+    drawer.addEventListener('transitionend', onEnd);
+  }
+}
+function toggleCart(){
+  const drawer = document.getElementById('cartDrawer');
+  if(!drawer) return;
+  if(drawer.hidden) openCart(); else closeCart();
+}
+
+function renderCartList(){
+  const container = document.getElementById('cartItems');
+  if(!container) return;
+  const map = new Map(products.map(p=>[p.id,p]));
+  container.innerHTML = '';
+  if(cart.length===0){ container.innerHTML = '<div class="muted">Корзина пуста</div>'; renderCartBadge(); return; }
+  for(const item of cart){
+    const p = map.get(item.id);
+    if(!p) continue;
+    const row = document.createElement('div');
+    row.className = 'cart-row';
+    row.innerHTML = `
+      <div class="cart-row-media"><img alt="${escapeHtml(p.name)}" src="${p.image || randomImage(p.name)}"></div>
+      <div class="cart-row-info">
+        <div class="cart-row-title">${escapeHtml(p.name)}</div>
+        <div class="cart-row-meta">${p.brand} • ${p.sport}</div>
+        <div class="cart-row-controls">
+          <button class="qty-btn" data-action="dec" data-id="${p.id}">−</button>
+          <input class="qty-input" type="number" min="1" value="${item.qty}" data-id="${p.id}">
+          <button class="qty-btn" data-action="inc" data-id="${p.id}">+</button>
+          <div class="cart-row-price">${(p.price*item.qty).toLocaleString('ru-RU',{style:'currency',currency:'RUB'})}</div>
+          <button class="icon-btn danger" data-action="remove" data-id="${p.id}" aria-label="Удалить">✕</button>
+        </div>
+      </div>`;
+    container.appendChild(row);
+  }
+  container.querySelectorAll('.qty-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const id = Number(e.currentTarget.getAttribute('data-id'));
+      const act = e.currentTarget.getAttribute('data-action');
+      const it = cart.find(i=>i.id===id);
+      if(!it) return;
+      if(act==='dec') it.qty = Math.max(0, it.qty-1);
+      if(act==='inc') it.qty += 1;
+      cart = cart.filter(i=>i.qty>0);
+      saveCart();
+      renderCartList();
+      renderCartBadge();
+    });
+  });
+  container.querySelectorAll('.qty-input').forEach(inp=>{
+    inp.addEventListener('change', (e)=>{
+      const id = Number(e.currentTarget.getAttribute('data-id'));
+      const val = Math.max(1, Number(e.currentTarget.value)||1);
+      setCartQty(id, val);
+      renderCartList();
+    });
+  });
+  container.querySelectorAll('[data-action="remove"]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const id = Number(e.currentTarget.getAttribute('data-id'));
+      removeFromCart(id);
+      renderCartList();
+    });
+  });
+  renderCartBadge();
+}
 
 async function initData(){
   try{
@@ -37,6 +161,7 @@ const uniqueBrands = [...new Set(products.map(p => p.brand))];
 // Init UI
 document.addEventListener('DOMContentLoaded', async () => {
   $('#year').textContent = new Date().getFullYear();
+  loadCart();
   await initData();
   hydrateFromURL();
   const uniqueSports = [...new Set(products.map(p => p.sport))];
@@ -48,6 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setDefaultPricePlaceholders();
   enhanceSelect('#ratingMin');
   update();
+  renderCartBadge();
 });
 
 function bindEvents(){
@@ -68,8 +194,15 @@ function bindEvents(){
   const perPageEl = document.getElementById('perPageSelect');
   if(perPageEl){ perPageEl.addEventListener('change', e => { state.perPage = Number(e.target.value); state.page = 1; update(); pushURL(); }); }
 
-  // Theme toggle
-  $('#themeToggle').addEventListener('click', toggleTheme);
+  // Cart events
+  const cartToggle = document.getElementById('cartToggle');
+  const cartClose = document.getElementById('cartClose');
+  const cartOverlay = document.getElementById('cartOverlay');
+  const cartClear = document.getElementById('cartClear');
+  if(cartToggle) cartToggle.addEventListener('click', toggleCart);
+  if(cartClose) cartClose.addEventListener('click', closeCart);
+  if(cartOverlay) cartOverlay.addEventListener('click', closeCart);
+  if(cartClear) cartClear.addEventListener('click', ()=>{ cart = []; saveCart(); renderCartList(); renderCartBadge(); });
 }
 
 function setDefaultPricePlaceholders(){
@@ -265,9 +398,12 @@ function productCard(p){
       <div class="title">${escapeHtml(p.name)}</div>
       <div class="muted">${p.brand} • ${p.sport}</div>
       <div class="rating">${'★'.repeat(Math.round(p.rating))}<span class="muted"> (${p.rating.toFixed(1)})</span></div>
+      <div class="spacer"></div>
       <div class="price">${p.price.toLocaleString('ru-RU',{style:'currency',currency:'RUB'})}</div>
-      <button class="btn primary" ${p.inStock?'':'disabled'}>В корзину</button>
+      <button class="btn primary add-to-cart" data-id="${p.id}" ${p.inStock?'':'disabled'}>В корзину</button>
     </div>`;
+  const btn = el.querySelector('.add-to-cart');
+  if(btn){ btn.addEventListener('click', ()=>{ addToCart(p.id, 1); }); }
   return el;
 }
 
