@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BEGIBEY — Админка</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="site-header"><div class="container header-inner"><a class="brand" href="/index.html"><span class="brand-mark">🏸</span><span class="brand-divider"></span><span class="brand-name">BEGIBEY Admin</span></a></div></header>
+    <main class="container" style="padding:24px 0">
+      <section id="authSection">
+        <h2>Вход администратора</h2>
+        <div style="max-width:420px">
+          <label>Email<input id="email" type="email" placeholder="admin@example.com"></label>
+          <label>Пароль<input id="password" type="password" placeholder="••••••••"></label>
+          <div style="margin-top:12px"><button id="loginBtn" class="btn primary">Войти</button> <button id="logoutBtn" class="btn ghost">Выйти</button></div>
+          <div id="authMsg" style="margin-top:10px"></div>
+        </div>
+      </section>
+      <hr style="margin:24px 0;border:none;border-top:1px solid rgba(255,255,255,.2)">
+      <section id="formSection" hidden>
+        <h2>Новый товар</h2>
+        <form id="productForm" style="max-width:640px">
+          <label>Название<input id="pName" required></label>
+          <label>Бренд<select id="pBrand"><option>Yonex</option><option>Li ning</option><option>Taan</option><option>Victor</option><option>Kumpoo</option></select></label>
+          <label>Вид спорта<select id="pSport"><option>Бадминтон</option><option>Футбол</option><option>Баскетбол</option><option>Теннис</option><option>Бег</option><option>Фитнес</option></select></label>
+          <label>Цена<input id="pPrice" type="number" min="0" required></label>
+          <label>Рейтинг<input id="pRating" type="number" min="0" max="5" step="0.1" value="4.5"></label>
+          <label class="switch"><input id="pInStock" type="checkbox" checked><span>В наличии</span></label>
+          <label>Флаги<select id="pFlags" multiple size="3"><option value="is_new">Новинка</option><option value="is_sale">Скидка</option><option value="recommended">Рекомендуем</option></select></label>
+          <label>URL изображения<input id="pImage" placeholder="https://...jpg"></label>
+          <div style="margin-top:12px"><button class="btn primary" type="submit">Сохранить</button></div>
+          <div id="formMsg" style="margin-top:10px"></div>
+        </form>
+      </section>
+    </main>
+    <script type="module">
+      import { loadSupabase } from './supabase.js';
+      let supabase = null;
+      const authMsg = document.getElementById('authMsg');
+      const formSection = document.getElementById('formSection');
+      const authSection = document.getElementById('authSection');
+      const loginBtn = document.getElementById('loginBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      const ensure = async () => {
+        supabase = await loadSupabase();
+        if(!supabase){ authMsg.textContent = 'Supabase не настроен. Заполните supabase.config.js'; return; }
+        supabase.auth.onAuthStateChange((_e, session) => updateAuth(session));
+        const { data: { session } } = await supabase.auth.getSession();
+        updateAuth(session);
+      };
+
+      function updateAuth(session){
+        const user = session?.user;
+        if(!user){ formSection.hidden = true; authMsg.textContent = 'Не авторизованы'; return; }
+        // fetch is_admin
+        supabase.from('profiles').select('is_admin').eq('id', user.id).single().then(({ data }) => {
+          const isAdmin = !!data?.is_admin;
+          formSection.hidden = !isAdmin;
+          authMsg.textContent = isAdmin ? `Вошли как админ: ${user.email}` : 'Нет прав администратора';
+        });
+      }
+
+      loginBtn.addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        authMsg.textContent = error ? error.message : 'Вход выполнен';
+      });
+      logoutBtn.addEventListener('click', async () => { await supabase.auth.signOut(); authMsg.textContent = 'Вышли'; });
+
+      document.getElementById('productForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const formMsg = document.getElementById('formMsg');
+        const values = {
+          name: document.getElementById('pName').value.trim(),
+          brand: document.getElementById('pBrand').value,
+          sport: document.getElementById('pSport').value,
+          price: Number(document.getElementById('pPrice').value),
+          rating: Number(document.getElementById('pRating').value||4.5),
+          in_stock: document.getElementById('pInStock').checked,
+          flags: Array.from(document.getElementById('pFlags').selectedOptions).map(o=>o.value),
+          image_url: document.getElementById('pImage').value.trim()||null,
+        };
+        try{
+          const { error } = await supabase.from('products').insert(values);
+          if(error) throw error;
+          formMsg.textContent = 'Товар создан';
+          e.target.reset();
+        }catch(err){ formMsg.textContent = err.message; }
+      });
+
+      ensure();
+    </script>
+  </body>
+  </html>
+
+

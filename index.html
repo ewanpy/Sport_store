@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BEGIBEY — Спортивный магазин</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="#">
+          <span class="brand-mark" aria-hidden="true">🏸</span>
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-name">BEGIBEY</span>
+        </a>
+        <nav class="header-actions" aria-label="Основная навигация">
+          <button id="themeToggle" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">🌓</button>
+          <a class="icon-btn" href="#" title="Избранное" aria-label="Избранное">❤</a>
+          <a class="icon-btn" href="#" title="Корзина" aria-label="Корзина">🛒</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container main">
+      <aside class="filters" aria-label="Фильтры товаров">
+        <form id="filtersForm">
+          <fieldset>
+            <legend>Поиск</legend>
+            <label class="sr-only" for="searchInput">Поиск товаров</label>
+            <input type="search" id="searchInput" placeholder="Поиск по названию, бренду, виду спорта" autocomplete="off">
+          </fieldset>
+
+          <fieldset>
+            <legend>Вид спорта</legend>
+            <div id="sportFilters" class="chip-group"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Бренд</legend>
+            <div id="brandFilters" class="chip-group"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Цена</legend>
+            <div class="range-row">
+              <input type="number" id="priceMin" placeholder="от 0" min="0">
+              <span class="range-sep">—</span>
+              <input type="number" id="priceMax" placeholder="до 9999" min="0">
+            </div>
+            <div class="range-row" style="margin-top:10px; align-items:flex-start; flex-direction:column; gap:8px">
+              <label class="switch"><input type="radio" name="priceSort" id="sortAsc" value="price-asc"><span> Сначала самые дорогие </span></label>
+              <label class="switch"><input type="radio" name="priceSort" id="sortDesc" value="price-desc"><span> Сначала самые дешевые </span></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Рейтинг</legend>
+            <select id="ratingMin" class="select">
+              <option value="0">Любой</option>
+              <option value="1">1★ и выше</option>
+              <option value="2">2★ и выше</option>
+              <option value="3">3★ и выше</option>
+              <option value="4">4★ и выше</option>
+              <option value="4.5">4.5★ и выше</option>
+            </select>
+          </fieldset>
+
+          <fieldset>
+            <legend>Наличие</legend>
+            <label class="switch">
+              <input type="checkbox" id="onlyInStock">
+              <span>Только в наличии</span>
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="onlyOutOfStock">
+              <span>Нет в наличии</span>
+            </label>
+          </fieldset>
+
+          <div class="filters-actions">
+            <button type="button" id="resetFilters" class="btn ghost">Сбросить</button>
+            <button type="submit" class="btn primary">Применить</button>
+          </div>
+        </form>
+      </aside>
+
+      <section class="content" aria-live="polite">
+        <div class="toolbar">
+          <div id="resultsCount" class="toolbar-right"></div>
+        </div>
+
+        <div id="productsGrid" class="grid"></div>
+        <nav class="pagination" id="pagination" aria-label="Пагинация"></nav>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>© <span id="year"></span> BEGIBEY</div>
+        <div class="footer-links">
+          <a href="#">Доставка</a>
+          <a href="#">Оплата</a>
+          <a href="#">Контакты</a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+  </html>
+
+
