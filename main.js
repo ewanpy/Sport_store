@@ -12,6 +12,8 @@ const state = {
   sort: 'relevance',
   perPage: 12,
   page: 1,
+  category: '',
+  subcategory: '',
 };
 
 // Data source: Supabase if configured, else fallback to mock
@@ -194,6 +196,26 @@ function bindEvents(){
   const perPageEl = document.getElementById('perPageSelect');
   if(perPageEl){ perPageEl.addEventListener('change', e => { state.perPage = Number(e.target.value); state.page = 1; update(); pushURL(); }); }
 
+  // Catalog menu
+  $$('.menu').forEach(menu => {
+    const btn = menu.querySelector('.menu-btn');
+    if(btn){ btn.addEventListener('click', ()=>{
+      const exp = menu.getAttribute('aria-expanded')==='true';
+      $$('.menu').forEach(m=>m.setAttribute('aria-expanded','false'));
+      menu.setAttribute('aria-expanded', exp ? 'false' : 'true');
+    }); }
+    document.addEventListener('click', (e)=>{ if(!menu.contains(e.target)) menu.setAttribute('aria-expanded','false'); });
+  });
+  $$('.menu-item, .menu-link').forEach(item => {
+    item.addEventListener('click', ()=>{
+      state.category = item.getAttribute('data-cat') || '';
+      state.subcategory = item.getAttribute('data-sub') || '';
+      state.page = 1;
+      update();
+      pushURL();
+    });
+  });
+
   // Cart events
   const cartToggle = document.getElementById('cartToggle');
   const cartClose = document.getElementById('cartClose');
@@ -339,6 +361,8 @@ function applyFilters(list){
     }
     if(state.sports.size && !state.sports.has(p.sport)) return false;
     if(state.brands.size && !state.brands.has(p.brand)) return false;
+    if(state.category && p.category !== state.category) return false;
+    if(state.subcategory && p.subcategory !== state.subcategory) return false;
     const onlyOut = $('#onlyOutOfStock')?.checked;
     if(state.onlyInStock && !p.inStock) return false;
     if(onlyOut && p.inStock) return false;
@@ -394,7 +418,7 @@ function productCard(p){
   el.innerHTML = `
     <div class="media"><img alt="${escapeHtml(p.name)}" src="${p.image || randomImage(p.name)}" loading="lazy"></div>
     <div class="body">
-      <div class="badges">${p.inStock ? '<span class="badge">В наличии</span>' : ''}</div>
+      <div class="badges">${p.inStock ? '<span class="badge">В наличии</span>' : '<span class="badge out">Нет в наличии</span>'}</div>
       <div class="title">${escapeHtml(p.name)}</div>
       <div class="muted">${p.brand} • ${p.sport}</div>
       <div class="rating">${'★'.repeat(Math.round(p.rating))}<span class="muted"> (${p.rating.toFixed(1)})</span></div>
@@ -449,6 +473,8 @@ function pushURL(includePage=true){
   if(state.onlyInStock) params.set('stock','1');
   if(state.sort!=='relevance') params.set('sort', state.sort);
   if(state.perPage!==12) params.set('pp', String(state.perPage));
+  if(state.category) params.set('cat', state.category);
+  if(state.subcategory) params.set('sub', state.subcategory);
   if(includePage && state.page>1) params.set('p', String(state.page));
   const qs = params.toString();
   history.replaceState({}, '', qs ? `?${qs}` : location.pathname);
@@ -470,6 +496,8 @@ function hydrateFromURL(){
   const pp = Number(params.get('pp')||12); state.perPage = pp;
   const perSel = document.getElementById('perPageSelect'); if(perSel) perSel.value = String(pp);
   state.page = Number(params.get('p')||1);
+  state.category = params.get('cat') || '';
+  state.subcategory = params.get('sub') || '';
 }
 
 function debounce(fn, ms){
@@ -490,6 +518,8 @@ function hashCode(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charC
 function generateSampleProducts(){
   const sports = ['Бадминтон','Футбол','Баскетбол','Теннис','Бег','Фитнес'];
   const brands = ['Yonex','Li ning','Taan','Victor','Kumpoo'];
+  const apparelSubs = ['футболки','шорты','юбки','носки','кроссовки'];
+  const accessorySubs = ['обмотки','Сумки и рюкзаки'];
   const items = [];
   let id=1;
   for(const sport of sports){
@@ -500,7 +530,11 @@ function generateSampleProducts(){
       const rating = Math.round((3 + Math.random()*2)*10)/10; // 3.0 - 5.0
       const inStock = Math.random()>0.2;
       const addedAt = Date.now() - Math.floor(Math.random()*120)*86400000;
-      items.push({ id:id++, name, brand, sport, price, rating, inStock, addedAt, image: randomImage(name)});
+      // Assign categories for browsing
+      const category = i%3===0 ? 'Одежда' : (i%3===1 ? 'Аксессуары' : 'Ракетки');
+      const subcategory = category==='Одежда' ? apparelSubs[i%apparelSubs.length]
+        : category==='Аксессуары' ? accessorySubs[i%accessorySubs.length] : '';
+      items.push({ id:id++, name, brand, sport, price, rating, inStock, addedAt, image: randomImage(name), category, subcategory });
     }
   }
   return items;

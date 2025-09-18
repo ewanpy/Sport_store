@@ -38,6 +38,13 @@ body{
 .brand-mark{font-size:24px}
 .brand-divider{width:2px;height:28px;background:var(--accent);display:inline-block;border-radius:2px}
 .brand-name{font-size:20px}
+.catalog-nav{display:flex;align-items:center;gap:14px}
+.menu{position:relative}
+.menu-btn,.menu-link{background:transparent;border:1px solid rgba(255,255,255,.25);color:var(--accent);padding:8px 10px;border-radius:10px;cursor:pointer}
+.menu-list{position:absolute;top:calc(100% + 6px);left:0;background:var(--bg-elev);border:1px solid rgba(255,255,255,.25);border-radius:12px;box-shadow:var(--shadow);display:none;min-width:200px;padding:6px;z-index:12}
+.menu[aria-expanded="true"] .menu-list{display:block}
+.menu-item{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--content);padding:8px 10px;border-radius:8px;cursor:pointer}
+.menu-item:hover{background:rgba(255,255,255,.08)}
 .header-actions{display:flex;gap:10px}
 .icon-btn{background:transparent;border:1px solid rgba(255,255,255,.25);color:var(--accent);padding:8px 10px;border-radius:10px;text-decoration:none;cursor:pointer}
 .icon-btn.danger{color:#fff;border-color:rgba(0,0,0,.12);background:#ef4444}
@@ -108,6 +115,7 @@ input[type="search"], input[type="number"], select{
 .rating{color:#f59e0b}
 .badges{display:flex;gap:8px}
 .badge{background:#10b981;color:#fff;border-radius:8px;padding:2px 8px;font-size:12px}
+.badge.out{background:#ef4444}
 
 /* Add-to-cart button design */
 .btn.primary.add-to-cart{background:linear-gradient(180deg,#ffffff,#f3f3f3);color:#7b0f17;border:none;box-shadow:0 1px 0 rgba(0,0,0,.05) inset, 0 6px 18px rgba(0,0,0,.12);transition:transform .04s ease, box-shadow .2s ease}
@@ -133,6 +141,9 @@ input[type="search"], input[type="number"], select{
 .cart-row-controls{display:flex;align-items:center;gap:8px}
 .qty-btn{width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--content);cursor:pointer}
 .qty-input{width:48px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--content);text-align:center}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
+.qty-input{ -moz-appearance: textfield }
 .cart-row-price{margin-left:auto;font-weight:700}
 
 /* Dim main content while cart open */
